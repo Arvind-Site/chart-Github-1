@@ -1,0 +1,60 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width,initial-scale=1" />
+  <title>India Charts — Real Data</title>
+  <link rel="stylesheet" href="style.css">
+  <script src="https://cdn.jsdelivr.net/npm/lightweight-charts@4.1.0/dist/lightweight-charts.standalone.production.js"></script>
+</head>
+<body>
+<header>
+  <div class="top-left">
+    <input id="symbolInput" type="text" placeholder="Search (e.g. RELIANCE, TCS, NIFTY)" />
+    <button id="searchBtn" title="Search">Search</button>
+    <select id="indexSelect" title="Choose index">
+      <option value="">— Indian Indexes —</option>
+      <option value="^NSEI">NIFTY 50</option>
+      <option value="^NSEBANK">BANK NIFTY</option>
+      <option value="^BSESN">SENSEX</option>
+      <option value="^CNXIT">NIFTY IT</option>
+      <option value="^CNXFIN">NIFTY FIN SERVICE</option>
+      <option value="^NSEMIDCAP">NIFTY MIDCAP</option>
+      <option value="^NSESMLCAP">NIFTY SMALLCAP</option>
+    </select>
+  </div>
+
+  <h1>🎯 India Market Charts — Real Data</h1>
+
+  <div class="header-controls">
+    <button id="btn-random" title="Random (mix)">Random Chart</button>
+    <button id="btn-historical" title="Load historical (random seed)">Random Historical</button>
+    <button id="btn-next" title="Reveal next candle">Next Candle ▶</button>
+    <label class="toggle"><input id="hide-info" type="checkbox"> Hide Info</label>
+  </div>
+
+  <div class="symbol-info" id="symbolInfo" style="display:none">
+    <div id="symbolLine"></div>
+    <div id="dateLine"></div>
+  </div>
+</header>
+
+<main>
+  <div id="chart"></div>
+  <aside id="side">
+    <h2>Notes</h2>
+    <textarea id="notes" placeholder="Write your strategy notes..."></textarea>
+    <div class="meta">
+      <p>Visible candles: <span id="visibleCount">0</span></p>
+      <p>Total candles: <span id="dataCount">0</span></p>
+    </div>
+  </aside>
+</main>
+
+<footer>
+  <small>Data via your Cloudflare Worker | Worker: <code>https://india-charts.8652527002arvind.workers.dev</code></small>
+</footer>
+
+<script src="script.js"></script>
+</body>
+</html>

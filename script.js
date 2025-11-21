@@ -1,167 +1,148 @@
-// Script for frontend — connected to your Cloudflare Worker
 const WORKER_BASE_URL = "https://india-charts.8652527002arvind.workers.dev";
 
-// chart setup
-const chartContainer = document.getElementById('chart');
+const chartContainer = document.getElementById("chart");
 const chart = LightweightCharts.createChart(chartContainer, {
   width: chartContainer.clientWidth,
   height: 620,
-  layout: { background: { color: '#02101a' }, textColor: '#bfe1ff' },
-  grid: { vertLines: { color: '#071827' }, horzLines: { color: '#071827' } }
+  layout: { background: { color: "#02101a" }, textColor: "#bfe1ff" },
 });
 const candles = chart.addCandlestickSeries();
-window.addEventListener('resize', ()=>chart.applyOptions({ width: chartContainer.clientWidth }));
 
-// helpers & state
-const popularStocks = ["RELIANCE.NS","TCS.NS","INFY.NS","HDFCBANK.NS","ICICIBANK.NS","MARUTI.NS","SBIN.NS","BAJFINANCE.NS","LT.NS"];
-const indianIndexes = ["^NSEI","^NSEBANK","^BSESN","^CNXIT","^CNXFIN","^NSEMIDCAP","^NSESMLCAP"];
-const mixPool = popularStocks.concat(indianIndexes);
+window.addEventListener("resize", () =>
+  chart.applyOptions({ width: chartContainer.clientWidth })
+);
 
 let fullData = [];
-let visibleIndex = 0;
+let currentSlice = [];
 
-// normalize input -> Yahoo-style symbol
-function normalizeToIndianSymbol(input){
-  if(!input) return null;
-  let s = input.toUpperCase().trim();
-  // common names mapping
-  const map = {
-    "NIFTY":"^NSEI","NIFTY50":"^NSEI","BANKNIFTY":"^NSEBANK","BANK NIFTY":"^NSEBANK",
-    "SENSEX":"^BSESN","NSEBANK":"^NSEBANK","NSEI":"^NSEI"
+// --------------------------------------------------
+// Normalize symbols to NSE/BSE/Yahoo format
+// --------------------------------------------------
+function normalize(symbol) {
+  if (!symbol) return null;
+  symbol = symbol.toUpperCase().trim();
+
+  const indexMap = {
+    "NIFTY": "^NSEI",
+    "NIFTY50": "^NSEI",
+    "NIFTY 50": "^NSEI",
+    "BANKNIFTY": "^NSEBANK",
+    "BANK NIFTY": "^NSEBANK",
+    "SENSEX": "^BSESN",
   };
-  if(map[s]) return map[s];
-  if(s.startsWith('^')) return s;
-  if(s.endsWith('.NS')||s.endsWith('.BO')||s.endsWith('.BSE')||s.endsWith('.NSE')) return s;
-  s = s.replace(/\s+/g,'');
-  return s + '.NS';
+
+  if (indexMap[symbol]) return indexMap[symbol];
+  if (symbol.startsWith("^")) return symbol;
+  if (symbol.endsWith(".NS") || symbol.endsWith(".BO")) return symbol;
+
+  return symbol.replace(/\s+/g, "") + ".NS";
 }
 
-// UI updates
-function updateSymbolInfo(symbol,range,isRandom=false){
-  const box=document.getElementById('symbolInfo');
-  const sl=document.getElementById('symbolLine');
-  const dl=document.getElementById('dateLine');
-  if(!symbol || isRandom){
-    box.style.display='block';
-    sl.textContent='Random / Practice Chart';
-    dl.textContent='';
+// --------------------------------------------------
+// Fetch real historical data
+// --------------------------------------------------
+async function fetchFullData(symbol) {
+  const url = `${WORKER_BASE_URL}/?symbol=${symbol}&range=5y&interval=1d`;
+  const res = await fetch(url);
+  const json = await res.json();
+  return json.data || [];
+}
+
+// --------------------------------------------------
+// Create RANDOM real slice
+// --------------------------------------------------
+function createRandomSlice(data) {
+  if (!data || data.length < 50) return data;
+
+  const total = data.length;
+
+  // random window size: 80 → 350 candles
+  const min = 80;
+  const max = 350;
+  const windowSize = Math.floor(Math.random() * (max - min)) + min;
+
+  // random start index
+  const maxStart = total - windowSize - 1;
+  const startIndex = Math.floor(Math.random() * maxStart);
+
+  return data.slice(startIndex, startIndex + windowSize);
+}
+
+// --------------------------------------------------
+// Load and Display symbol
+// --------------------------------------------------
+async function loadSymbol(rawSymbol) {
+  const symbol = normalize(rawSymbol);
+  if (!symbol) return alert("Enter a valid symbol");
+
+  document.getElementById("symbolLine").textContent = symbol;
+
+  const data = await fetchFullData(symbol);
+  if (!data.length) {
+    alert("No data returned from Worker for: " + symbol);
     return;
   }
-  const label = symbol.startsWith('^') ? 'Index' : 'Stock';
-  sl.textContent = `${symbol} — ${label}`;
-  if(Array.isArray(range) && range.length>0) dl.textContent = `${range[0]} → ${range[range.length-1]}`;
-  else dl.textContent='';
-  box.style.display='block';
+
+  fullData = data;
+  currentSlice = createRandomSlice(fullData);
+
+  candles.setData(currentSlice);
+
+  const t0 = currentSlice[0].time;
+  const t1 = currentSlice[currentSlice.length - 1].time;
+  document.getElementById("dateLine").textContent = `${t0} → ${t1}`;
+
+  document.getElementById("dataCount").textContent = fullData.length;
+  document.getElementById("visibleCount").textContent = currentSlice.length;
+
+  document.getElementById("symbolInfo").style.display = "block";
 }
 
-// fetch via worker
-async function fetchFromWorker(symbol,range='2y',interval='1d'){
-  const url = `${WORKER_BASE_URL}/?symbol=${encodeURIComponent(symbol)}&range=${encodeURIComponent(range)}&interval=${encodeURIComponent(interval)}`;
-  const res = await fetch(url);
-  if(!res.ok) throw new Error('Worker fetch failed '+res.status);
-  return await res.json(); // { symbol, data }
+// --------------------------------------------------
+// Random Mix Loader (Stock + Index)
+// --------------------------------------------------
+const stocks = ["RELIANCE.NS", "TCS.NS", "INFY.NS", "SBIN.NS", "HDFCBANK.NS"];
+const indexes = ["^NSEI", "^NSEBANK", "^BSESN"];
+const mix = stocks.concat(indexes);
+
+async function loadRandomMix() {
+  const pick = mix[Math.floor(Math.random() * mix.length)];
+  await loadSymbol(pick);
 }
 
-// load symbol (real)
-async function loadSymbol(rawInput){
-  const symbol = normalizeToIndianSymbol(rawInput);
-  if(!symbol) return alert('Enter a symbol');
-  updateSymbolInfo(symbol,null,false);
-  try{
-    const payload = await fetchFromWorker(symbol,'5y','1d');
-    if(!payload || !payload.data || payload.data.length===0){
-      alert('No data returned for ' + symbol + '. If index shows empty, random fallback will be used.');
-      // fallback: generate random synthetic chart for practice
-      fullData = generateRandomData(300, 100 + Math.random()*100);
-      visibleIndex = Math.min(60, fullData.length);
-      candles.setData(fullData.slice(0,visibleIndex));
-      document.getElementById('dataCount').textContent = fullData.length;
-      document.getElementById('visibleCount').textContent = visibleIndex;
-      updateSymbolInfo(null,null,true);
-      return;
-    }
-    fullData = payload.data;
-    visibleIndex = Math.min(80, fullData.length);
-    candles.setData(fullData.slice(0,visibleIndex));
-    document.getElementById('dataCount').textContent = fullData.length;
-    document.getElementById('visibleCount').textContent = visibleIndex;
-    updateSymbolInfo(symbol, fullData.map(d=>d.time), false);
-  }catch(err){
-    console.error(err);
-    alert('Error loading symbol: '+err.message);
-  }
-}
+// --------------------------------------------------
+// Next Candle (Reveal next in current slice only)
+// --------------------------------------------------
+document.getElementById("btn-next").onclick = () => {
+  alert("Since slices are random real data, NEXT CANDLE replay is disabled.\nEach search gives new data instead.");
+};
 
-// Random generator fallback (keeps UI snappy)
-function generateRandomData(count=200,start=100){
-  const out=[]; let price=start;
-  for(let i=0;i<count;i++){
-    const open=+(price.toFixed(2));
-    const change=(Math.random()-0.45)*(price*0.02);
-    const close=+(Math.max(0.1, open + change).toFixed(2));
-    const high=+(Math.max(open,close) + Math.random()* (price*0.008)).toFixed(2);
-    const low=+(Math.min(open,close) - Math.random()* (price*0.008)).toFixed(2);
-    out.push({ time: i+1, open, high, low, close });
-    price = close;
-  }
-  return out;
-}
+// --------------------------------------------------
+// UI Event Listeners
+// --------------------------------------------------
+document.getElementById("searchBtn").onclick = () => {
+  loadSymbol(document.getElementById("symbolInput").value);
+};
 
-// Random mix loader (C - mix indexes + stocks)
-async function loadRandomMix(){
-  const pick = mixPool[Math.floor(Math.random()*mixPool.length)];
-  // pick may be index or stock; try real fetch
-  try{
-    await loadSymbol(pick);
-  }catch(e){
-    // if loadSymbol fails, fallback to synthetic
-    fullData = generateRandomData(250, 100 + Math.random()*200);
-    visibleIndex = Math.min(80, fullData.length);
-    candles.setData(fullData.slice(0,visibleIndex));
-    document.getElementById('dataCount').textContent = fullData.length;
-    document.getElementById('visibleCount').textContent = visibleIndex;
-    updateSymbolInfo(null,null,true);
-  }
-}
-
-// Next candle reveal
-document.getElementById('btn-next').addEventListener('click', ()=>{
-  if(visibleIndex < fullData.length){
-    visibleIndex++;
-    candles.setData(fullData.slice(0,visibleIndex));
-  } else {
-    // append one more candle (either from real data or synthetic)
-    const more = fullData.length ? [fullData[fullData.length-1]] : generateRandomData(1,100);
-    fullData.push(...more);
-    visibleIndex = fullData.length;
-    candles.setData(fullData.slice(0,visibleIndex));
-  }
-  document.getElementById('visibleCount').textContent = visibleIndex;
+document.getElementById("symbolInput").addEventListener("keyup", (e) => {
+  if (e.key === "Enter") loadSymbol(e.target.value);
 });
 
-// buttons
-document.getElementById('btn-random').addEventListener('click', ()=>loadRandomMix());
-document.getElementById('btn-historical').addEventListener('click', ()=>{
-  // pick a random real symbol or fallback synthetic
-  const pick = mixPool[Math.floor(Math.random()*mixPool.length)];
-  loadSymbol(pick);
-});
+document.getElementById("indexSelect").onchange = (e) => {
+  if (e.target.value) loadSymbol(e.target.value);
+};
 
-// search UI
-document.getElementById('searchBtn').addEventListener('click', ()=>{
-  const s = document.getElementById('symbolInput').value.trim();
-  if(s) loadSymbol(s);
-});
-document.getElementById('symbolInput').addEventListener('keyup', (e)=>{ if(e.key==='Enter') document.getElementById('searchBtn').click(); });
-document.getElementById('indexSelect').addEventListener('change', (e)=>{ if(e.target.value) loadSymbol(e.target.value); });
+document.getElementById("btn-random").onclick = loadRandomMix;
+document.getElementById("btn-historical").onclick = loadRandomMix;
 
-// hide info checkbox
-document.getElementById('hide-info').addEventListener('change', (e)=>{
-  document.getElementById('symbolInfo').style.display = e.target.checked ? 'none' : 'block';
-});
+// Hide info toggle
+document.getElementById("hide-info").onchange = (e) => {
+  document.getElementById("symbolInfo").style.display = e.target.checked
+    ? "none"
+    : "block";
+};
 
-// initial example load
-(async ()=>{
-  // show a random mix at start
-  await loadRandomMix();
-})();
+// --------------------------------------------------
+// Load one random chart on startup
+// --------------------------------------------------
+loadRandomMix();

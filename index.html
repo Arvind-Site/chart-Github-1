@@ -8,17 +8,12 @@
   <script src="https://cdn.jsdelivr.net/npm/lightweight-charts@4.1.0/dist/lightweight-charts.standalone.production.js"></script>
 </head>
 <body>
-
 <header>
   <div class="top-left">
-
-    <!-- SEARCH -->
     <input id="symbolInput" type="text" placeholder="Search (e.g. RELIANCE, TCS, NIFTY)" />
-    <button id="searchBtn">Search</button>
-
-    <!-- INDEX DROPDOWN -->
-    <select id="indexSelect">
-      <option value="">Indexes</option>
+    <button id="searchBtn" title="Search">Search</button>
+    <select id="indexSelect" title="Choose index">
+      <option value="">— Indian Indexes —</option>
       <option value="^NSEI">NIFTY 50</option>
       <option value="^NSEBANK">BANK NIFTY</option>
       <option value="^BSESN">SENSEX</option>
@@ -27,24 +22,14 @@
       <option value="^NSEMIDCAP">NIFTY MIDCAP</option>
       <option value="^NSESMLCAP">NIFTY SMALLCAP</option>
     </select>
-
-    <!-- DATE RANGE : SAME ROW -->
-    <label class="date-label">From:</label>
-    <input type="date" id="fromDate">
-
-    <label class="date-label">To:</label>
-    <input type="date" id="toDate">
-
-    <button id="rangeBtn">Load Range</button>
-
   </div>
 
   <h1>🎯 India Market Charts — Real Data</h1>
 
   <div class="header-controls">
-    <button id="btn-random">Random Chart</button>
-    <button id="btn-historical">Random Historical</button>
-    <button id="btn-next">Next Candle ▶</button>
+    <button id="btn-random" title="Random (mix)">Random Chart</button>
+    <button id="btn-historical" title="Load historical (random seed)">Random Historical</button>
+    <button id="btn-next" title="Reveal next candle">Next Candle ▶</button>
     <label class="toggle"><input id="hide-info" type="checkbox"> Hide Info</label>
   </div>
 
@@ -56,10 +41,9 @@
 
 <main>
   <div id="chart"></div>
-
   <aside id="side">
     <h2>Notes</h2>
-    <textarea id="notes" placeholder="Write notes..."></textarea>
+    <textarea id="notes" placeholder="Write your strategy notes..."></textarea>
     <div class="meta">
       <p>Visible candles: <span id="visibleCount">0</span></p>
       <p>Total candles: <span id="dataCount">0</span></p>
@@ -68,9 +52,7 @@
 </main>
 
 <footer>
-  <small>Data via Cloudflare Worker:
-    <code>https://india-charts.8652527002arvind.workers.dev</code>
-  </small>
+  <small>Data via your Cloudflare Worker | Worker: <code>https://india-charts.8652527002arvind.workers.dev</code></small>
 </footer>
 
 <script src="script.js"></script>

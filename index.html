@@ -1,64 +1,45 @@
-<!doctype html>
+<!DOCTYPE html>
 <html lang="en">
 <head>
-  <meta charset="utf-8" />
-  <meta name="viewport" content="width=device-width,initial-scale=1" />
-  <title>India Charts — TradingView-style</title>
-  <link rel="stylesheet" href="style.css">
-  <script src="https://cdn.jsdelivr.net/npm/lightweight-charts@4.1.0/dist/lightweight-charts.standalone.production.js"></script>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Indian Market Random Chart</title>
+  <link rel="stylesheet" href="style.css" />
+  <script src="https://unpkg.com/lightweight-charts/dist/lightweight-charts.standalone.production.js"></script>
 </head>
+
 <body>
-  <!-- Screenshot reference (uploaded asset): /mnt/data/A_screenshot_of_a_strategy_training_charts_web_app.png -->
-  <header class="topbar">
-    <div class="left">
-      <button id="menuBtn" class="icon">☰</button>
-      <input id="symbolInput" class="symbol-input" type="text" placeholder="Search symbol (e.g. RELIANCE, NIFTY)" />
-      <button id="addBtn" class="icon">＋</button>
-    </div>
+  <div class="header">
+    <div class="left-tools">
+      <button id="btn-random" class="btn primary">🎲 Random Chart</button>
 
-    <div class="center">
-      <div id="timeframeGroup" class="timeframes" role="tablist" aria-label="Timeframes">
-        <button class="tf" data-interval="5m">5m</button>
-        <button class="tf" data-interval="15m">15m</button>
-        <button class="tf active" data-interval="60m">1h</button>
-        <button class="tf" data-interval="240m">4h</button>
-        <button class="tf" data-interval="1d">1D</button>
+      <div class="search-box">
+        <input id="search" class="search-input" type="text" placeholder="Search Stock / Index…" />
+        <button id="btn-search" class="btn small">Search</button>
       </div>
 
-      <div class="tools-left">
-        <button id="indBtn" class="smallbtn">Indicators</button>
-        <button id="alertBtn" class="smallbtn">Alert</button>
+      <div class="timeframe">
+        <button id="tf-5m" class="tf-btn">5m</button>
+        <button id="tf-15m" class="tf-btn">15m</button>
+        <button id="tf-1h" class="tf-btn">1H</button>
+        <button id="tf-4h" class="tf-btn">4H</button>
+        <button id="tf-1d" class="tf-btn active">1D</button>
       </div>
+
+      <button id="btn-next" class="btn next">Next Candle ➜</button>
     </div>
 
-    <div class="right">
-      <button id="randomBtn" class="btn">Random Chart</button>
-      <button id="nextBtn" class="btn">Next Candle ▶</button>
-    </div>
-  </header>
-
-  <div id="metaBar" class="meta-bar">
-    <div id="symbolInfo" class="symbol-info" style="display:none">
-      <strong id="symbolLine"></strong>
-      <span id="dateLine"></span>
-    </div>
-    <div class="counters">
-      <span>Total: <b id="dataCount">0</b></span>
-      <span>Visible: <b id="visibleCount">0</b></span>
+    <!-- Right Info Panel -->
+    <div class="info-panel">
+      <div><strong>Symbol:</strong> <span id="info-symbol">--</span></div>
+      <div><strong>Interval:</strong> <span id="info-interval">--</span></div>
+      <div><strong>Date Range:</strong> <span id="info-range">--</span></div>
     </div>
   </div>
 
-  <main>
-    <div id="chart" class="chart-area"></div>
-    <aside id="side" class="side">
-      <h3>Notes</h3>
-      <textarea id="notes" placeholder="Write notes..."></textarea>
-    </aside>
-  </main>
+  <div id="loading">Loading…</div>
 
-  <footer class="footer">
-    <small>Data via Cloudflare Worker: <code>https://india-charts.8652527002arvind.workers.dev</code></small>
-  </footer>
+  <div id="chart"></div>
 
   <script src="script.js"></script>
 </body>

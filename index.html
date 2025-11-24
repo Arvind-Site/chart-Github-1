@@ -32,6 +32,11 @@
       border-color: #1e90ff;
       font-weight: bold;
     }
+
+    /* Remove side panel space when notes removed */
+    main {
+      display: block;
+    }
   </style>
 
 </head>
@@ -57,9 +62,9 @@
   <h1>🎯 India Market Charts — Real Data</h1>
 
   <div class="header-controls">
-    <button id="btn-random" title="Random (mix)">Random Chart</button>
-    <button id="btn-historical" title="Load historical (random seed)">Random Historical</button>
+    <button id="btn-random" title="Random Stock">Random Chart</button>
     <button id="btn-next" title="Reveal next candle">Next Candle ▶</button>
+
     <label class="toggle">
       <input id="hide-info" type="checkbox"> Hide Info
     </label>
@@ -89,15 +94,7 @@
 <main>
   <div id="chart"></div>
 
-  <aside id="side">
-    <h2>Notes</h2>
-    <textarea id="notes" placeholder="Write your strategy notes..."></textarea>
-
-    <div class="meta">
-      <p>Visible candles: <span id="visibleCount">0</span></p>
-      <p>Total candles: <span id="dataCount">0</span></p>
-    </div>
-  </aside>
+  <!-- Notes removed -->
 </main>
 
 <footer>

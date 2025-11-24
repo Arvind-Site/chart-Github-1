@@ -12,11 +12,34 @@ window.addEventListener("resize", () =>
   chart.applyOptions({ width: chartContainer.clientWidth })
 );
 
+// --------------------------------------------------
+// Global State
+// --------------------------------------------------
 let fullData = [];
-let currentSlice = [];
+let lastSymbol = null;
+let autoRefreshTimer = null;
 
 // --------------------------------------------------
-// Normalize symbols to NSE/BSE/Yahoo format
+// Timeframe Mapping (TradingView style)
+// --------------------------------------------------
+const TIMEFRAMES = {
+  "1m": { interval: "1m", range: "1d" },
+  "5m": { interval: "5m", range: "5d" },
+  "15m": { interval: "15m", range: "5d" },
+  "1h": { interval: "60m", range: "1mo" },
+  "4h": { interval: "240m", range: "6mo" },
+  "1d": { interval: "1d", range: "2y" },
+  "1w": { interval: "1wk", range: "5y" },
+  "1mo": { interval: "1mo", range: "10y" },
+  "6mo": { interval: "1d", range: "6mo" },
+  "1y": { interval: "1d", range: "1y" },
+  "max": { interval: "1d", range: "max" },
+};
+
+let currentTF = "1m"; // default timeframe
+
+// --------------------------------------------------
+// Normalize Symbols
 // --------------------------------------------------
 function normalize(symbol) {
   if (!symbol) return null;
@@ -30,7 +53,6 @@ function normalize(symbol) {
     "BANK NIFTY": "^NSEBANK",
     "SENSEX": "^BSESN",
   };
-
   if (indexMap[symbol]) return indexMap[symbol];
   if (symbol.startsWith("^")) return symbol;
   if (symbol.endsWith(".NS") || symbol.endsWith(".BO")) return symbol;
@@ -39,11 +61,14 @@ function normalize(symbol) {
 }
 
 // --------------------------------------------------
-// Fetch LIVE fresh real data (1-minute candles)
+// Fetch Data from Worker
 // --------------------------------------------------
-async function fetchFullData(symbol) {
+async function fetchData(symbol, tfKey) {
+  const { interval, range } = TIMEFRAMES[tfKey];
+
   const url =
-    `${WORKER_BASE_URL}/?symbol=${symbol}&range=1d&interval=1m&t=${Date.now()}`;
+    `${WORKER_BASE_URL}/?symbol=${symbol}` +
+    `&range=${range}&interval=${interval}&t=${Date.now()}`;
 
   const res = await fetch(url);
   const json = await res.json();
@@ -51,37 +76,77 @@ async function fetchFullData(symbol) {
 }
 
 // --------------------------------------------------
-// Display full live data (NO RANDOM SLICES)
+// Render Chart
 // --------------------------------------------------
 async function loadSymbol(rawSymbol) {
   const symbol = normalize(rawSymbol);
   if (!symbol) return alert("Enter a valid symbol");
 
+  lastSymbol = symbol;
   document.getElementById("symbolLine").textContent = symbol;
 
-  const data = await fetchFullData(symbol);
+  const data = await fetchData(symbol, currentTF);
   if (!data.length) {
-    alert("No data returned from Worker for: " + symbol);
+    alert("No data returned for: " + symbol);
     return;
   }
 
   fullData = data;
-  currentSlice = data;
+  candles.setData(fullData);
 
-  candles.setData(currentSlice);
-
-  const t0 = currentSlice[0].time;
-  const t1 = currentSlice[currentSlice.length - 1].time;
+  const t0 = fullData[0].time;
+  const t1 = fullData[fullData.length - 1].time;
   document.getElementById("dateLine").textContent = `${t0} → ${t1}`;
 
   document.getElementById("dataCount").textContent = fullData.length;
-  document.getElementById("visibleCount").textContent = currentSlice.length;
+  document.getElementById("visibleCount").textContent = fullData.length;
 
   document.getElementById("symbolInfo").style.display = "block";
+
+  setupAutoRefresh();
 }
 
 // --------------------------------------------------
-// Random Stock Loader (fresh real data each time)
+// Auto Refresh for 1-minute timeframe
+// --------------------------------------------------
+function setupAutoRefresh() {
+  if (autoRefreshTimer) clearInterval(autoRefreshTimer);
+
+  if (currentTF === "1m") {
+    autoRefreshTimer = setInterval(() => {
+      if (lastSymbol) loadSymbol(lastSymbol);
+    }, 60 * 1000); // refresh every 60 seconds
+  }
+}
+
+// --------------------------------------------------
+// Timeframe Button Handler + Active Highlight
+// --------------------------------------------------
+document.querySelectorAll(".tf-btn").forEach(btn => {
+  btn.addEventListener("click", () => {
+    // Highlight active button
+    document.querySelectorAll(".tf-btn").forEach(b => b.classList.remove("active"));
+    btn.classList.add("active");
+
+    currentTF = btn.dataset.int.replace("m", "m")
+                  || btn.dataset.int.replace("wk", "1w")
+                  || btn.dataset.int;
+
+    currentTF = btn.textContent.toLowerCase();  // simplify handling
+
+    currentTF = btn.textContent.toLowerCase().replace("d","d");
+
+    const tfKey = btn.textContent.toLowerCase();
+
+    currentTF = tfKey;
+
+    // Reload chart in new timeframe
+    if (lastSymbol) loadSymbol(lastSymbol);
+  });
+});
+
+// --------------------------------------------------
+// Random Symbol Loader
 // --------------------------------------------------
 const stocks = [
   "RELIANCE.NS", "TCS.NS", "INFY.NS",
@@ -95,7 +160,7 @@ async function loadRandomStock() {
 }
 
 // --------------------------------------------------
-// UI Event Listeners
+// Event Listeners
 // --------------------------------------------------
 document.getElementById("searchBtn").onclick = () => {
   loadSymbol(document.getElementById("symbolInput").value);
@@ -111,7 +176,6 @@ document.getElementById("indexSelect").onchange = (e) => {
 
 document.getElementById("btn-random").onclick = loadRandomStock;
 
-// Hide info toggle
 document.getElementById("hide-info").onchange = (e) => {
   document.getElementById("symbolInfo").style.display = e.target.checked
     ? "none"
@@ -119,6 +183,6 @@ document.getElementById("hide-info").onchange = (e) => {
 };
 
 // --------------------------------------------------
-// Load one fresh chart on startup
+// Start: Load a random stock
 // --------------------------------------------------
 loadRandomStock();

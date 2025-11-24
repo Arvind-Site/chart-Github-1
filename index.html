@@ -1,46 +1,60 @@
-<!DOCTYPE html>
+<!doctype html>
 <html lang="en">
 <head>
-  <meta charset="UTF-8" />
-  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>Indian Market Random Chart</title>
-  <link rel="stylesheet" href="style.css" />
-  <script src="https://unpkg.com/lightweight-charts/dist/lightweight-charts.standalone.production.js"></script>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width,initial-scale=1" />
+  <title>India Charts — Real Data</title>
+  <link rel="stylesheet" href="style.css">
+  <script src="https://cdn.jsdelivr.net/npm/lightweight-charts@4.1.0/dist/lightweight-charts.standalone.production.js"></script>
 </head>
-
 <body>
-  <div class="header">
-    <div class="left-tools">
-      <button id="btn-random" class="btn primary">🎲 Random Chart</button>
-
-      <div class="search-box">
-        <input id="search" class="search-input" type="text" placeholder="Search Stock / Index…" />
-        <button id="btn-search" class="btn small">Search</button>
-      </div>
-
-      <div class="timeframe">
-        <button id="tf-5m" class="tf-btn">5m</button>
-        <button id="tf-15m" class="tf-btn">15m</button>
-        <button id="tf-1h" class="tf-btn">1H</button>
-        <button id="tf-4h" class="tf-btn">4H</button>
-        <button id="tf-1d" class="tf-btn active">1D</button>
-      </div>
-
-      <button id="btn-next" class="btn next">Next Candle ➜</button>
-    </div>
-
-    <!-- Right Info Panel -->
-    <div class="info-panel">
-      <div><strong>Symbol:</strong> <span id="info-symbol">--</span></div>
-      <div><strong>Interval:</strong> <span id="info-interval">--</span></div>
-      <div><strong>Date Range:</strong> <span id="info-range">--</span></div>
-    </div>
+<header>
+  <div class="top-left">
+    <input id="symbolInput" type="text" placeholder="Search (e.g. RELIANCE, TCS, NIFTY)" />
+    <button id="searchBtn" title="Search">Search</button>
+    <select id="indexSelect" title="Choose index">
+      <option value="">— Indian Indexes —</option>
+      <option value="^NSEI">NIFTY 50</option>
+      <option value="^NSEBANK">BANK NIFTY</option>
+      <option value="^BSESN">SENSEX</option>
+      <option value="^CNXIT">NIFTY IT</option>
+      <option value="^CNXFIN">NIFTY FIN SERVICE</option>
+      <option value="^NSEMIDCAP">NIFTY MIDCAP</option>
+      <option value="^NSESMLCAP">NIFTY SMALLCAP</option>
+    </select>
   </div>
 
-  <div id="loading">Loading…</div>
+  <h1>🎯 India Market Charts — Real Data</h1>
 
+  <div class="header-controls">
+    <button id="btn-random" title="Random (mix)">Random Chart</button>
+    <button id="btn-historical" title="Load historical (random seed)">Random Historical</button>
+    <button id="btn-next" title="Reveal next candle">Next Candle ▶</button>
+    <label class="toggle"><input id="hide-info" type="checkbox"> Hide Info</label>
+  </div>
+
+  <div class="symbol-info" id="symbolInfo" style="display:none">
+    <div id="symbolLine"></div>
+    <div id="dateLine"></div>
+  </div>
+</header>
+
+<main>
   <div id="chart"></div>
+  <aside id="side">
+    <h2>Notes</h2>
+    <textarea id="notes" placeholder="Write your strategy notes..."></textarea>
+    <div class="meta">
+      <p>Visible candles: <span id="visibleCount">0</span></p>
+      <p>Total candles: <span id="dataCount">0</span></p>
+    </div>
+  </aside>
+</main>
 
-  <script src="script.js"></script>
+<footer>
+  <small>Data via your Cloudflare Worker | Worker: <code>https://india-charts.8652527002arvind.workers.dev</code></small>
+</footer>
+
+<script src="script.js"></script>
 </body>
 </html>

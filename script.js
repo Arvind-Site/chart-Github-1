@@ -20,7 +20,7 @@ let lastSymbol = null;
 let autoRefreshTimer = null;
 
 // --------------------------------------------------
-// Timeframe Mapping (TradingView style)
+// TradingView Timeframe Mapping
 // --------------------------------------------------
 const TIMEFRAMES = {
   "1m": { interval: "1m", range: "1d" },
@@ -36,7 +36,7 @@ const TIMEFRAMES = {
   "max": { interval: "1d", range: "max" },
 };
 
-let currentTF = "1m"; // default timeframe
+let currentTF = "1m"; // Default timeframe
 
 // --------------------------------------------------
 // Normalize Symbols
@@ -61,7 +61,7 @@ function normalize(symbol) {
 }
 
 // --------------------------------------------------
-// Fetch Data from Worker
+// Fetch Data From Worker
 // --------------------------------------------------
 async function fetchData(symbol, tfKey) {
   const { interval, range } = TIMEFRAMES[tfKey];
@@ -107,7 +107,7 @@ async function loadSymbol(rawSymbol) {
 }
 
 // --------------------------------------------------
-// Auto Refresh for 1-minute timeframe
+// Auto-Refresh for 1m timeframe
 // --------------------------------------------------
 function setupAutoRefresh() {
   if (autoRefreshTimer) clearInterval(autoRefreshTimer);
@@ -115,32 +115,23 @@ function setupAutoRefresh() {
   if (currentTF === "1m") {
     autoRefreshTimer = setInterval(() => {
       if (lastSymbol) loadSymbol(lastSymbol);
-    }, 60 * 1000); // refresh every 60 seconds
+    }, 60000);
   }
 }
 
 // --------------------------------------------------
-// Timeframe Button Handler + Active Highlight
+// Timeframe Button Logic (FIXED)
 // --------------------------------------------------
-document.querySelectorAll(".tf-btn").forEach(btn => {
+document.querySelectorAll(".tf-btn").forEach((btn) => {
   btn.addEventListener("click", () => {
     // Highlight active button
     document.querySelectorAll(".tf-btn").forEach(b => b.classList.remove("active"));
     btn.classList.add("active");
 
-    currentTF = btn.dataset.int.replace("m", "m")
-                  || btn.dataset.int.replace("wk", "1w")
-                  || btn.dataset.int;
+    // Read key from data attribute
+    currentTF = btn.getAttribute("data-tf");
 
-    currentTF = btn.textContent.toLowerCase();  // simplify handling
-
-    currentTF = btn.textContent.toLowerCase().replace("d","d");
-
-    const tfKey = btn.textContent.toLowerCase();
-
-    currentTF = tfKey;
-
-    // Reload chart in new timeframe
+    // Reload chart
     if (lastSymbol) loadSymbol(lastSymbol);
   });
 });
@@ -183,6 +174,6 @@ document.getElementById("hide-info").onchange = (e) => {
 };
 
 // --------------------------------------------------
-// Start: Load a random stock
+// Startup
 // --------------------------------------------------
 loadRandomStock();

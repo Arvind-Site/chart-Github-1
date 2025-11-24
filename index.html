@@ -4,8 +4,36 @@
   <meta charset="utf-8" />
   <meta name="viewport" content="width=device-width,initial-scale=1" />
   <title>India Charts — Real Data</title>
+
   <link rel="stylesheet" href="style.css">
   <script src="https://cdn.jsdelivr.net/npm/lightweight-charts@4.1.0/dist/lightweight-charts.standalone.production.js"></script>
+
+  <style>
+    /* Timeframe Button Highlight */
+    #timeframeBar {
+      display: flex;
+      gap: 6px;
+      padding: 10px 20px;
+      background: #04131f;
+      border-bottom: 1px solid #083048;
+    }
+    .tf-btn {
+      padding: 6px 10px;
+      background: #0c2a3d;
+      border: 1px solid #164663;
+      color: #bfe1ff;
+      border-radius: 4px;
+      cursor: pointer;
+      font-size: 14px;
+    }
+    .tf-btn.active {
+      background: #1e90ff;
+      color: white;
+      border-color: #1e90ff;
+      font-weight: bold;
+    }
+  </style>
+
 </head>
 <body>
 
@@ -45,17 +73,17 @@
 
 <!-- ⭐ TradingView-style Timeframe Bar -->
 <div id="timeframeBar">
-  <button class="tf-btn" data-int="1m" data-range="1d">1m</button>
-  <button class="tf-btn" data-int="5m" data-range="5d">5m</button>
-  <button class="tf-btn" data-int="15m" data-range="5d">15m</button>
-  <button class="tf-btn" data-int="60m" data-range="1mo">1h</button>
-  <button class="tf-btn" data-int="240m" data-range="6mo">4h</button>
-  <button class="tf-btn" data-int="1d" data-range="2y">1D</button>
-  <button class="tf-btn" data-int="1wk" data-range="5y">1W</button>
-  <button class="tf-btn" data-int="1mo" data-range="10y">1M</button>
-  <button class="tf-btn" data-int="1d" data-range="6mo">6M</button>
-  <button class="tf-btn" data-int="1d" data-range="1y">1Y</button>
-  <button class="tf-btn" data-int="1d" data-range="max">MAX</button>
+  <button class="tf-btn active" data-tf="1m">1m</button>
+  <button class="tf-btn" data-tf="5m">5m</button>
+  <button class="tf-btn" data-tf="15m">15m</button>
+  <button class="tf-btn" data-tf="1h">1h</button>
+  <button class="tf-btn" data-tf="4h">4h</button>
+  <button class="tf-btn" data-tf="1d">1D</button>
+  <button class="tf-btn" data-tf="1w">1W</button>
+  <button class="tf-btn" data-tf="1mo">1M</button>
+  <button class="tf-btn" data-tf="6mo">6M</button>
+  <button class="tf-btn" data-tf="1y">1Y</button>
+  <button class="tf-btn" data-tf="max">MAX</button>
 </div>
 
 <main>

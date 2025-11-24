@@ -1,205 +1,167 @@
-// =========================
-// CONFIG
-// =========================
+// Script for frontend — connected to your Cloudflare Worker
 const WORKER_BASE_URL = "https://india-charts.8652527002arvind.workers.dev";
 
-// Supported Indian symbols
-const INDIAN_SYMBOLS = [
-  "NIFTY 50|^NSEI",
-  "BANKNIFTY|^NSEBANK",
-  "FINNIFTY|^CNXFIN",
-  "RELIANCE|RELIANCE.NS",
-  "TCS|TCS.NS",
-  "INFY|INFY.NS",
-  "HDFCBANK|HDFCBANK.NS",
-  "ICICIBANK|ICICIBANK.NS",
-  "KOTAKBANK|KOTAKBANK.NS",
-  "SBIN|SBIN.NS",
-  "LT|LT.NS",
-  "BAJFINANCE|BAJFINANCE.NS",
-  "BHARTIARTL|BHARTIARTL.NS"
-];
+// chart setup
+const chartContainer = document.getElementById('chart');
+const chart = LightweightCharts.createChart(chartContainer, {
+  width: chartContainer.clientWidth,
+  height: 620,
+  layout: { background: { color: '#02101a' }, textColor: '#bfe1ff' },
+  grid: { vertLines: { color: '#071827' }, horzLines: { color: '#071827' } }
+});
+const candles = chart.addCandlestickSeries();
+window.addEventListener('resize', ()=>chart.applyOptions({ width: chartContainer.clientWidth }));
 
-// timeframes
-const TIMEFRAMES = {
-  "5m": "5m",
-  "15m": "15m",
-  "1h": "60m",
-  "4h": "240m",
-  "1d": "1d"
-};
+// helpers & state
+const popularStocks = ["RELIANCE.NS","TCS.NS","INFY.NS","HDFCBANK.NS","ICICIBANK.NS","MARUTI.NS","SBIN.NS","BAJFINANCE.NS","LT.NS"];
+const indianIndexes = ["^NSEI","^NSEBANK","^BSESN","^CNXIT","^CNXFIN","^NSEMIDCAP","^NSESMLCAP"];
+const mixPool = popularStocks.concat(indianIndexes);
 
-let chart, candleSeries;
-let currentSymbol = null;
-let currentInterval = "1d";
-let fullSeries = [];
-let randomSlice = [];
-let sliceIndex = 0;
+let fullData = [];
+let visibleIndex = 0;
 
-// =========================
-// SAFE NORMALIZER (FIXES CRASH)
-// =========================
-function normalizeSeries(data) {
-  return data
-    .filter(d =>
-      d &&
-      d.time &&
-      d.open != null &&
-      d.high != null &&
-      d.low != null &&
-      d.close != null
-    )
-    .map(d => {
-      const t =
-        typeof d.time === "number"
-          ? new Date(d.time * 1000).toISOString().split("T")[0]
-          : d.time;
-
-      return {
-        time: t,
-        open: Number(d.open),
-        high: Number(d.high),
-        low: Number(d.low),
-        close: Number(d.close),
-        volume: Number(d.volume || 0)
-      };
-    });
+// normalize input -> Yahoo-style symbol
+function normalizeToIndianSymbol(input){
+  if(!input) return null;
+  let s = input.toUpperCase().trim();
+  // common names mapping
+  const map = {
+    "NIFTY":"^NSEI","NIFTY50":"^NSEI","BANKNIFTY":"^NSEBANK","BANK NIFTY":"^NSEBANK",
+    "SENSEX":"^BSESN","NSEBANK":"^NSEBANK","NSEI":"^NSEI"
+  };
+  if(map[s]) return map[s];
+  if(s.startsWith('^')) return s;
+  if(s.endsWith('.NS')||s.endsWith('.BO')||s.endsWith('.BSE')||s.endsWith('.NSE')) return s;
+  s = s.replace(/\s+/g,'');
+  return s + '.NS';
 }
 
-// =========================
-// API CALL
-// =========================
-async function fetchCandles(symbol, interval = "1d", range = "180d") {
-  const url = `${WORKER_BASE_URL}/?symbol=${symbol}&interval=${interval}&range=${range}`;
-  console.log("FETCH:", url);
-
-  const res = await fetch(url);
-  const json = await res.json();
-
-  if (!json.data || json.data.length === 0) {
-    throw new Error("Empty or invalid data returned");
-  }
-
-  return normalizeSeries(json.data);
-}
-
-// =========================
-// RANDOM SLICE
-// =========================
-function pickRandomSlice(data) {
-  if (data.length < 60) return data;
-
-  const sliceSize = Math.floor(Math.random() * (90 - 30)) + 30;
-  const start = Math.floor(Math.random() * (data.length - sliceSize));
-
-  return data.slice(start, start + sliceSize);
-}
-
-// =========================
-// NEXT CANDLE
-// =========================
-function addNextCandle() {
-  if (sliceIndex >= fullSeries.length - 1) return;
-
-  sliceIndex++;
-  const next = fullSeries[sliceIndex];
-
-  randomSlice.push(next);
-  candleSeries.update(next);
-}
-
-// =========================
-// LOAD SYMBOL
-// =========================
-async function loadSymbol(symbol) {
-  try {
-    document.getElementById("loading").style.display = "block";
-
-    currentSymbol = symbol;
-
-    fullSeries = await fetchCandles(symbol, currentInterval, "360d");
-    randomSlice = pickRandomSlice(fullSeries);
-    sliceIndex = fullSeries.indexOf(randomSlice[randomSlice.length - 1]);
-
-    candleSeries.setData(randomSlice);
-
-    updateInfoBox(symbol, randomSlice);
-
-  } catch (err) {
-    alert("Failed to load symbol: " + err.message);
-  } finally {
-    document.getElementById("loading").style.display = "none";
-  }
-}
-
-// =========================
-// UPDATE INFO BOX
-// =========================
-function updateInfoBox(symbol, series) {
-  const start = series[0].time;
-  const end = series[series.length - 1].time;
-
-  document.getElementById("info-symbol").textContent = symbol;
-  document.getElementById("info-interval").textContent = currentInterval;
-  document.getElementById("info-range").textContent = `${start} → ${end}`;
-}
-
-// =========================
-// RANDOM BUTTON
-// =========================
-function loadRandom() {
-  const pick = INDIAN_SYMBOLS[Math.floor(Math.random() * INDIAN_SYMBOLS.length)];
-  const symbol = pick.split("|")[1];
-  loadSymbol(symbol);
-}
-
-// =========================
-// TIMEFRAME BUTTONS
-// =========================
-function changeTimeframe(tf) {
-  currentInterval = TIMEFRAMES[tf];
-  if (currentSymbol) loadSymbol(currentSymbol);
-}
-
-// =========================
-// SEARCH
-// =========================
-function searchSymbol() {
-  const input = document.getElementById("search").value.trim().toUpperCase();
-
-  const found = INDIAN_SYMBOLS.find(s => s.startsWith(input));
-  if (!found) {
-    alert("Symbol not found");
+// UI updates
+function updateSymbolInfo(symbol,range,isRandom=false){
+  const box=document.getElementById('symbolInfo');
+  const sl=document.getElementById('symbolLine');
+  const dl=document.getElementById('dateLine');
+  if(!symbol || isRandom){
+    box.style.display='block';
+    sl.textContent='Random / Practice Chart';
+    dl.textContent='';
     return;
   }
-
-  const symbol = found.split("|")[1];
-  loadSymbol(symbol);
+  const label = symbol.startsWith('^') ? 'Index' : 'Stock';
+  sl.textContent = `${symbol} — ${label}`;
+  if(Array.isArray(range) && range.length>0) dl.textContent = `${range[0]} → ${range[range.length-1]}`;
+  else dl.textContent='';
+  box.style.display='block';
 }
 
-// =========================
-// INIT CHART
-// =========================
-function initChart() {
-  chart = LightweightCharts.createChart(document.getElementById("chart"), {
-    width: window.innerWidth - 40,
-    height: 500,
-    layout: { background: { color: "#ffffff" }, textColor: "#333" },
-    grid: { vertLines: { color: "#eee" }, horzLines: { color: "#eee" } }
-  });
-
-  candleSeries = chart.addCandlestickSeries();
+// fetch via worker
+async function fetchFromWorker(symbol,range='2y',interval='1d'){
+  const url = `${WORKER_BASE_URL}/?symbol=${encodeURIComponent(symbol)}&range=${encodeURIComponent(range)}&interval=${encodeURIComponent(interval)}`;
+  const res = await fetch(url);
+  if(!res.ok) throw new Error('Worker fetch failed '+res.status);
+  return await res.json(); // { symbol, data }
 }
 
-initChart();
+// load symbol (real)
+async function loadSymbol(rawInput){
+  const symbol = normalizeToIndianSymbol(rawInput);
+  if(!symbol) return alert('Enter a symbol');
+  updateSymbolInfo(symbol,null,false);
+  try{
+    const payload = await fetchFromWorker(symbol,'5y','1d');
+    if(!payload || !payload.data || payload.data.length===0){
+      alert('No data returned for ' + symbol + '. If index shows empty, random fallback will be used.');
+      // fallback: generate random synthetic chart for practice
+      fullData = generateRandomData(300, 100 + Math.random()*100);
+      visibleIndex = Math.min(60, fullData.length);
+      candles.setData(fullData.slice(0,visibleIndex));
+      document.getElementById('dataCount').textContent = fullData.length;
+      document.getElementById('visibleCount').textContent = visibleIndex;
+      updateSymbolInfo(null,null,true);
+      return;
+    }
+    fullData = payload.data;
+    visibleIndex = Math.min(80, fullData.length);
+    candles.setData(fullData.slice(0,visibleIndex));
+    document.getElementById('dataCount').textContent = fullData.length;
+    document.getElementById('visibleCount').textContent = visibleIndex;
+    updateSymbolInfo(symbol, fullData.map(d=>d.time), false);
+  }catch(err){
+    console.error(err);
+    alert('Error loading symbol: '+err.message);
+  }
+}
 
-// BUTTON EVENTS
-document.getElementById("btn-random").onclick = loadRandom;
-document.getElementById("btn-next").onclick = addNextCandle;
-document.getElementById("btn-search").onclick = searchSymbol;
+// Random generator fallback (keeps UI snappy)
+function generateRandomData(count=200,start=100){
+  const out=[]; let price=start;
+  for(let i=0;i<count;i++){
+    const open=+(price.toFixed(2));
+    const change=(Math.random()-0.45)*(price*0.02);
+    const close=+(Math.max(0.1, open + change).toFixed(2));
+    const high=+(Math.max(open,close) + Math.random()* (price*0.008)).toFixed(2);
+    const low=+(Math.min(open,close) - Math.random()* (price*0.008)).toFixed(2);
+    out.push({ time: i+1, open, high, low, close });
+    price = close;
+  }
+  return out;
+}
 
-document.getElementById("tf-5m").onclick = () => changeTimeframe("5m");
-document.getElementById("tf-15m").onclick = () => changeTimeframe("15m");
-document.getElementById("tf-1h").onclick = () => changeTimeframe("1h");
-document.getElementById("tf-4h").onclick = () => changeTimeframe("4h");
-document.getElementById("tf-1d").onclick = () => changeTimeframe("1d");
+// Random mix loader (C - mix indexes + stocks)
+async function loadRandomMix(){
+  const pick = mixPool[Math.floor(Math.random()*mixPool.length)];
+  // pick may be index or stock; try real fetch
+  try{
+    await loadSymbol(pick);
+  }catch(e){
+    // if loadSymbol fails, fallback to synthetic
+    fullData = generateRandomData(250, 100 + Math.random()*200);
+    visibleIndex = Math.min(80, fullData.length);
+    candles.setData(fullData.slice(0,visibleIndex));
+    document.getElementById('dataCount').textContent = fullData.length;
+    document.getElementById('visibleCount').textContent = visibleIndex;
+    updateSymbolInfo(null,null,true);
+  }
+}
+
+// Next candle reveal
+document.getElementById('btn-next').addEventListener('click', ()=>{
+  if(visibleIndex < fullData.length){
+    visibleIndex++;
+    candles.setData(fullData.slice(0,visibleIndex));
+  } else {
+    // append one more candle (either from real data or synthetic)
+    const more = fullData.length ? [fullData[fullData.length-1]] : generateRandomData(1,100);
+    fullData.push(...more);
+    visibleIndex = fullData.length;
+    candles.setData(fullData.slice(0,visibleIndex));
+  }
+  document.getElementById('visibleCount').textContent = visibleIndex;
+});
+
+// buttons
+document.getElementById('btn-random').addEventListener('click', ()=>loadRandomMix());
+document.getElementById('btn-historical').addEventListener('click', ()=>{
+  // pick a random real symbol or fallback synthetic
+  const pick = mixPool[Math.floor(Math.random()*mixPool.length)];
+  loadSymbol(pick);
+});
+
+// search UI
+document.getElementById('searchBtn').addEventListener('click', ()=>{
+  const s = document.getElementById('symbolInput').value.trim();
+  if(s) loadSymbol(s);
+});
+document.getElementById('symbolInput').addEventListener('keyup', (e)=>{ if(e.key==='Enter') document.getElementById('searchBtn').click(); });
+document.getElementById('indexSelect').addEventListener('change', (e)=>{ if(e.target.value) loadSymbol(e.target.value); });
+
+// hide info checkbox
+document.getElementById('hide-info').addEventListener('change', (e)=>{
+  document.getElementById('symbolInfo').style.display = e.target.checked ? 'none' : 'block';
+});
+
+// initial example load
+(async ()=>{
+  // show a random mix at start
+  await loadRandomMix();
+})();

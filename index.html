@@ -9,7 +9,6 @@
   <script src="https://cdn.jsdelivr.net/npm/lightweight-charts@4.1.0/dist/lightweight-charts.standalone.production.js"></script>
 
   <style>
-    /* Timeframe Button Highlight */
     #timeframeBar {
       display: flex;
       gap: 6px;
@@ -24,18 +23,11 @@
       color: #bfe1ff;
       border-radius: 4px;
       cursor: pointer;
-      font-size: 14px;
     }
     .tf-btn.active {
       background: #1e90ff;
-      color: white;
-      border-color: #1e90ff;
+      color: #fff;
       font-weight: bold;
-    }
-
-    /* Remove side panel space when notes removed */
-    main {
-      display: block;
     }
   </style>
 
@@ -45,9 +37,9 @@
 <header>
   <div class="top-left">
     <input id="symbolInput" type="text" placeholder="Search (e.g. RELIANCE, TCS, NIFTY)" />
-    <button id="searchBtn" title="Search">Search</button>
+    <button id="searchBtn">Search</button>
 
-    <select id="indexSelect" title="Choose index">
+    <select id="indexSelect">
       <option value="">— Indian Indexes —</option>
       <option value="^NSEI">NIFTY 50</option>
       <option value="^NSEBANK">BANK NIFTY</option>
@@ -62,8 +54,8 @@
   <h1>🎯 India Market Charts — Real Data</h1>
 
   <div class="header-controls">
-    <button id="btn-random" title="Random Stock">Random Chart</button>
-    <button id="btn-next" title="Reveal next candle">Next Candle ▶</button>
+    <button id="btn-random">Random Chart</button>
+    <button id="btn-next">Next Candle ▶</button>
 
     <label class="toggle">
       <input id="hide-info" type="checkbox"> Hide Info
@@ -76,7 +68,7 @@
   </div>
 </header>
 
-<!-- ⭐ TradingView-style Timeframe Bar -->
+<!-- ⭐ Timeframe Bar -->
 <div id="timeframeBar">
   <button class="tf-btn active" data-tf="1m">1m</button>
   <button class="tf-btn" data-tf="5m">5m</button>
@@ -93,13 +85,12 @@
 
 <main>
   <div id="chart"></div>
-
-  <!-- Notes removed -->
 </main>
 
 <footer>
-  <small>Data via your Cloudflare Worker | Worker: 
-  <code>https://india-charts.8652527002arvind.workers.dev</code></small>
+  <small>Data via Cloudflare Worker:
+    <code>https://india-charts.8652527002arvind.workers.dev</code>
+  </small>
 </footer>
 
 <script src="script.js"></script>

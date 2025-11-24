@@ -39,37 +39,19 @@ function normalize(symbol) {
 }
 
 // --------------------------------------------------
-// Fetch real historical data
+// Fetch LIVE fresh real data (1-minute candles)
 // --------------------------------------------------
 async function fetchFullData(symbol) {
-  const url = `${WORKER_BASE_URL}/?symbol=${symbol}&range=5y&interval=1d`;
+  const url =
+    `${WORKER_BASE_URL}/?symbol=${symbol}&range=1d&interval=1m&t=${Date.now()}`;
+
   const res = await fetch(url);
   const json = await res.json();
   return json.data || [];
 }
 
 // --------------------------------------------------
-// Create RANDOM real slice
-// --------------------------------------------------
-function createRandomSlice(data) {
-  if (!data || data.length < 50) return data;
-
-  const total = data.length;
-
-  // random window size: 80 → 350 candles
-  const min = 80;
-  const max = 350;
-  const windowSize = Math.floor(Math.random() * (max - min)) + min;
-
-  // random start index
-  const maxStart = total - windowSize - 1;
-  const startIndex = Math.floor(Math.random() * maxStart);
-
-  return data.slice(startIndex, startIndex + windowSize);
-}
-
-// --------------------------------------------------
-// Load and Display symbol
+// Display full live data (NO RANDOM SLICES)
 // --------------------------------------------------
 async function loadSymbol(rawSymbol) {
   const symbol = normalize(rawSymbol);
@@ -84,7 +66,7 @@ async function loadSymbol(rawSymbol) {
   }
 
   fullData = data;
-  currentSlice = createRandomSlice(fullData);
+  currentSlice = data;
 
   candles.setData(currentSlice);
 
@@ -99,23 +81,18 @@ async function loadSymbol(rawSymbol) {
 }
 
 // --------------------------------------------------
-// Random Mix Loader (Stock + Index)
+// Random Stock Loader (fresh real data each time)
 // --------------------------------------------------
-const stocks = ["RELIANCE.NS", "TCS.NS", "INFY.NS", "SBIN.NS", "HDFCBANK.NS"];
-const indexes = ["^NSEI", "^NSEBANK", "^BSESN"];
-const mix = stocks.concat(indexes);
+const stocks = [
+  "RELIANCE.NS", "TCS.NS", "INFY.NS",
+  "SBIN.NS", "ICICIBANK.NS", "HDFCBANK.NS",
+  "LT.NS", "HCLTECH.NS", "WIPRO.NS"
+];
 
-async function loadRandomMix() {
-  const pick = mix[Math.floor(Math.random() * mix.length)];
+async function loadRandomStock() {
+  const pick = stocks[Math.floor(Math.random() * stocks.length)];
   await loadSymbol(pick);
 }
-
-// --------------------------------------------------
-// Next Candle (Reveal next in current slice only)
-// --------------------------------------------------
-document.getElementById("btn-next").onclick = () => {
-  alert("Since slices are random real data, NEXT CANDLE replay is disabled.\nEach search gives new data instead.");
-};
 
 // --------------------------------------------------
 // UI Event Listeners
@@ -132,8 +109,7 @@ document.getElementById("indexSelect").onchange = (e) => {
   if (e.target.value) loadSymbol(e.target.value);
 };
 
-document.getElementById("btn-random").onclick = loadRandomMix;
-document.getElementById("btn-historical").onclick = loadRandomMix;
+document.getElementById("btn-random").onclick = loadRandomStock;
 
 // Hide info toggle
 document.getElementById("hide-info").onchange = (e) => {
@@ -143,6 +119,6 @@ document.getElementById("hide-info").onchange = (e) => {
 };
 
 // --------------------------------------------------
-// Load one random chart on startup
+// Load one fresh chart on startup
 // --------------------------------------------------
-loadRandomMix();
+loadRandomStock();

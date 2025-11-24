@@ -22,15 +22,18 @@ let visibleIndex = 0;
 
 // normalize input -> Yahoo-style symbol
 function normalizeToIndianSymbol(input){
-  if(!input) return null;
+  if (!input || input.trim() === "") return null;
   let s = input.toUpperCase().trim();
+
   const map = {
     "NIFTY":"^NSEI","NIFTY50":"^NSEI","BANKNIFTY":"^NSEBANK","BANK NIFTY":"^NSEBANK",
     "SENSEX":"^BSESN","NSEBANK":"^NSEBANK","NSEI":"^NSEI"
   };
   if(map[s]) return map[s];
+
   if(s.startsWith('^')) return s;
-  if(s.endsWith('.NS')||s.endsWith('.BO')||s.endsWith('.BSE')||s.endsWith('.NSE')) return s;
+  if(s.endsWith('.NS') || s.endsWith('.BO') || s.endsWith('.BSE') || s.endsWith('.NSE')) return s;
+
   s = s.replace(/\s+/g,'');
   return s + '.NS';
 }
@@ -40,55 +43,75 @@ function updateSymbolInfo(symbol,range,isRandom=false){
   const box=document.getElementById('symbolInfo');
   const sl=document.getElementById('symbolLine');
   const dl=document.getElementById('dateLine');
+
   if(!symbol || isRandom){
     box.style.display='block';
     sl.textContent='Random / Practice Chart';
     dl.textContent='';
     return;
   }
+
   const label = symbol.startsWith('^') ? 'Index' : 'Stock';
   sl.textContent = `${symbol} — ${label}`;
-  if(Array.isArray(range) && range.length>0) dl.textContent = `${range[0]} → ${range[range.length-1]}`;
-  else dl.textContent='';
+
+  if(Array.isArray(range) && range.length>0)
+    dl.textContent = `${range[0]} → ${range[range.length-1]}`;
+  else
+    dl.textContent='';
+
   box.style.display='block';
 }
 
-// fetch via worker (UPDATED: cache-busting parameter added)
+// fetch via worker (UPDATED: cache-busting + validation)
 async function fetchFromWorker(symbol,range='2y',interval='1d'){
+  if (!symbol || symbol.trim() === "") {
+    throw new Error("Symbol missing");
+  }
+
   const url =
     `${WORKER_BASE_URL}/?symbol=${encodeURIComponent(symbol)}&range=${encodeURIComponent(range)}&interval=${encodeURIComponent(interval)}&t=${Date.now()}`;
-  
+
   const res = await fetch(url, { cache: "no-store" });
-  if(!res.ok) throw new Error('Worker fetch failed '+res.status);
+  if(!res.ok) throw new Error('Worker fetch failed: '+res.status);
+
   return await res.json();
 }
 
-// load symbol (real)
+// load symbol (updated: strong validation)
 async function loadSymbol(rawInput){
+  if (!rawInput || rawInput.trim() === "") {
+    alert("Please enter a valid stock symbol");
+    return;
+  }
+
   const symbol = normalizeToIndianSymbol(rawInput);
-  if(!symbol) return alert('Enter a symbol');
+  if (!symbol) {
+    alert("Invalid symbol format");
+    return;
+  }
+
   updateSymbolInfo(symbol,null,false);
+
   try{
     const payload = await fetchFromWorker(symbol,'5y','1d');
+
     if(!payload || !payload.data || payload.data.length===0){
-      alert('No data returned for ' + symbol);
-      fullData = generateRandomData(300, 100 + Math.random()*100);
-      visibleIndex = Math.min(60, fullData.length);
-      candles.setData(fullData.slice(0,visibleIndex));
-      document.getElementById('dataCount').textContent = fullData.length;
-      document.getElementById('visibleCount').textContent = visibleIndex;
-      updateSymbolInfo(null,null,true);
+      alert("No data returned for " + symbol);
       return;
     }
+
     fullData = payload.data;
     visibleIndex = Math.min(80, fullData.length);
     candles.setData(fullData.slice(0,visibleIndex));
+
     document.getElementById('dataCount').textContent = fullData.length;
     document.getElementById('visibleCount').textContent = visibleIndex;
+
     updateSymbolInfo(symbol, fullData.map(d=>d.time), false);
-  }catch(err){
+
+  } catch(err){
     console.error(err);
-    alert('Error loading symbol: '+err.message);
+    alert("Error loading symbol: "+err.message);
   }
 }
 
@@ -110,9 +133,10 @@ function generateRandomData(count=200,start=100){
 // Random mix loader
 async function loadRandomMix(){
   const pick = mixPool[Math.floor(Math.random()*mixPool.length)];
-  try{
+
+  try {
     await loadSymbol(pick);
-  }catch(e){
+  } catch(e){
     fullData = generateRandomData(250, 100 + Math.random()*200);
     visibleIndex = Math.min(80, fullData.length);
     candles.setData(fullData.slice(0,visibleIndex));
@@ -133,6 +157,7 @@ document.getElementById('btn-next').addEventListener('click', ()=>{
 
 // buttons
 document.getElementById('btn-random').addEventListener('click', ()=>loadRandomMix());
+
 document.getElementById('btn-historical').addEventListener('click', ()=>{
   const pick = mixPool[Math.floor(Math.random()*mixPool.length)];
   loadSymbol(pick);
@@ -143,8 +168,21 @@ document.getElementById('searchBtn').addEventListener('click', ()=>{
   const s = document.getElementById('symbolInput').value.trim();
   if(s) loadSymbol(s);
 });
-document.getElementById('symbolInput').addEventListener('keyup', (e)=>{ if(e.key==='Enter') document.getElementById('searchBtn').click(); });
-document.getElementById('indexSelect').addEventListener('change', (e)=>{ if(e.target.value) loadSymbol(e.target.value); });
+
+document.getElementById('symbolInput').addEventListener('keyup', (e)=>{
+  if(e.key==='Enter'){
+    const s = document.getElementById('symbolInput').value.trim();
+    if(s) loadSymbol(s);
+  }
+});
+
+// dropdown index FIXED: do nothing if value is empty
+document.getElementById('indexSelect').addEventListener('change', (e)=>{
+  const value = e.target.value;
+  if (value && value.trim() !== "") {
+    loadSymbol(value);
+  }
+});
 
 // hide info checkbox
 document.getElementById('hide-info').addEventListener('change', (e)=>{

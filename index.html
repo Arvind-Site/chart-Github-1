@@ -8,10 +8,12 @@
   <script src="https://cdn.jsdelivr.net/npm/lightweight-charts@4.1.0/dist/lightweight-charts.standalone.production.js"></script>
 </head>
 <body>
+
 <header>
   <div class="top-left">
     <input id="symbolInput" type="text" placeholder="Search (e.g. RELIANCE, TCS, NIFTY)" />
     <button id="searchBtn" title="Search">Search</button>
+
     <select id="indexSelect" title="Choose index">
       <option value="">— Indian Indexes —</option>
       <option value="^NSEI">NIFTY 50</option>
@@ -30,7 +32,9 @@
     <button id="btn-random" title="Random (mix)">Random Chart</button>
     <button id="btn-historical" title="Load historical (random seed)">Random Historical</button>
     <button id="btn-next" title="Reveal next candle">Next Candle ▶</button>
-    <label class="toggle"><input id="hide-info" type="checkbox"> Hide Info</label>
+    <label class="toggle">
+      <input id="hide-info" type="checkbox"> Hide Info
+    </label>
   </div>
 
   <div class="symbol-info" id="symbolInfo" style="display:none">
@@ -39,11 +43,28 @@
   </div>
 </header>
 
+<!-- ⭐ TradingView-style Timeframe Bar -->
+<div id="timeframeBar">
+  <button class="tf-btn" data-int="1m" data-range="1d">1m</button>
+  <button class="tf-btn" data-int="5m" data-range="5d">5m</button>
+  <button class="tf-btn" data-int="15m" data-range="5d">15m</button>
+  <button class="tf-btn" data-int="60m" data-range="1mo">1h</button>
+  <button class="tf-btn" data-int="240m" data-range="6mo">4h</button>
+  <button class="tf-btn" data-int="1d" data-range="2y">1D</button>
+  <button class="tf-btn" data-int="1wk" data-range="5y">1W</button>
+  <button class="tf-btn" data-int="1mo" data-range="10y">1M</button>
+  <button class="tf-btn" data-int="1d" data-range="6mo">6M</button>
+  <button class="tf-btn" data-int="1d" data-range="1y">1Y</button>
+  <button class="tf-btn" data-int="1d" data-range="max">MAX</button>
+</div>
+
 <main>
   <div id="chart"></div>
+
   <aside id="side">
     <h2>Notes</h2>
     <textarea id="notes" placeholder="Write your strategy notes..."></textarea>
+
     <div class="meta">
       <p>Visible candles: <span id="visibleCount">0</span></p>
       <p>Total candles: <span id="dataCount">0</span></p>
@@ -52,7 +73,8 @@
 </main>
 
 <footer>
-  <small>Data via your Cloudflare Worker | Worker: <code>https://india-charts.8652527002arvind.workers.dev</code></small>
+  <small>Data via your Cloudflare Worker | Worker: 
+  <code>https://india-charts.8652527002arvind.workers.dev</code></small>
 </footer>
 
 <script src="script.js"></script>
